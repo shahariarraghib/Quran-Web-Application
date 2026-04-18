@@ -1,9 +1,17 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 const SettingsContext = createContext(null);
 const STORAGE_KEY = "quran-reader-settings";
+const SETTINGS_EVENT = "quran-settings-change";
 
 const defaultSettings = {
   arabicFont: "Amiri",
@@ -11,40 +19,68 @@ const defaultSettings = {
   translationSize: 16,
 };
 
-// safe localStorage read (SSR safe)
-function getInitialSettings() {
-  if (typeof window === "undefined") {
+function parseSettings(rawValue) {
+  if (!rawValue) {
     return defaultSettings;
   }
 
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    return {
+      ...defaultSettings,
+      ...JSON.parse(rawValue),
+    };
   } catch {
     return defaultSettings;
   }
 }
 
 export function SettingsProvider({ children }) {
-  // 👇 IMPORTANT: lazy init (NO useEffect needed)
-  const [settings, setSettings] = useState(getInitialSettings);
+  const [settings, setSettings] = useState(defaultSettings);
 
-  // save only when settings changes
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch {}
-  }, [settings]);
+    const syncSettings = () => {
+      setSettings(parseSettings(window.localStorage.getItem(STORAGE_KEY)));
+    };
 
-  const updateSetting = (key, value) => {
-    setSettings((currentSettings) => ({
-      ...currentSettings,
-      [key]: value,
-    }));
-  };
+    const handleStorageChange = (event) => {
+      if (!event.key || event.key === STORAGE_KEY) {
+        syncSettings();
+      }
+    };
+
+    syncSettings();
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener(SETTINGS_EVENT, syncSettings);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(SETTINGS_EVENT, syncSettings);
+    };
+  }, []);
+
+  const updateSetting = useCallback((key, value) => {
+    setSettings((currentSettings) => {
+      const nextSettings = {
+        ...currentSettings,
+        [key]: value,
+      };
+
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSettings));
+        window.dispatchEvent(new Event(SETTINGS_EVENT));
+      } catch {}
+
+      return nextSettings;
+    });
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ settings, updateSetting }),
+    [settings, updateSetting],
+  );
 
   return (
-    <SettingsContext.Provider value={{ settings, setSettings, updateSetting }}>
+    <SettingsContext.Provider value={contextValue}>
       {children}
     </SettingsContext.Provider>
   );

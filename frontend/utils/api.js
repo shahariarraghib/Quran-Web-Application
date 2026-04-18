@@ -1,4 +1,4 @@
-﻿export const API = "http://localhost:5000/api";
+﻿export const API = "https://quran-web-application-backend.vercel.app/api";
 
 async function readJson(url, options = {}) {
   const response = await fetch(url, options);

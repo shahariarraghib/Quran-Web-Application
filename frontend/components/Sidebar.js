@@ -20,11 +20,6 @@ export default function Sidebar() {
   const fontMenuRef = useRef(null);
 
   useEffect(() => {
-    setIsOpen(false);
-    setIsFontMenuOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     function handlePointerDown(event) {
       if (!fontMenuRef.current?.contains(event.target)) {
         setIsFontMenuOpen(false);
@@ -68,7 +63,7 @@ export default function Sidebar() {
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-800/80">
               Reader
             </p>
-            <h1 className="mt-2 font-['Plus_Jakarta_Sans'] text-2xl font-bold text-slate-900">
+            <h1 className="mt-2 font-sans text-2xl font-bold text-slate-900">
               Quran Web Application
             </h1>
             <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -109,7 +104,7 @@ export default function Sidebar() {
         </nav>
 
         <div className="rounded-[1.75rem] border border-white/60 bg-white/75 p-4 shadow-sm">
-          <h2 className="font-['Plus_Jakarta_Sans'] text-lg font-bold text-slate-900">
+          <h2 className="font-sans text-lg font-bold text-slate-900">
             Settings
           </h2>
 
