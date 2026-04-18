@@ -110,11 +110,11 @@ export default function SearchPage() {
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">
                   Surah {result.surahNumber} | Ayah {result.ayahNumber}
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-900">
+                <h2 className="mt-2  text-2xl font-bold text-slate-900">
                   {result.surahName}
                 </h2>
                 <p
-                  className="mt-2 text-right text-3xl leading-none text-slate-900"
+                  className="mt-2 text-right text-3xl leading-none text-slate-900 p-4"
                   style={{
                     fontFamily: arabicFontFamily,
                     fontSize: `${Math.max(settings.arabicSize - 2, 24)}px`,
