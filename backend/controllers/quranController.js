@@ -42,8 +42,10 @@ export async function getSurahById(req, res) {
 
 export async function searchAyah(req, res) {
   try {
-    const query = new URL(req.url, "http://localhost").searchParams.get("q") ?? "";
-    const results = await fetchSearchResults(query);
+    const params = new URL(req.url, "http://localhost").searchParams;
+    const query = params.get("q") ?? "";
+    const lang = params.get("lang") ?? "en";
+    const results = await fetchSearchResults(query, lang);
     sendJson(res, 200, results);
   } catch (error) {
     sendJson(res, 502, {

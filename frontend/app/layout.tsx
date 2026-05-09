@@ -1,7 +1,14 @@
-﻿import { Amiri, Plus_Jakarta_Sans, Scheherazade_New } from "next/font/google";
+import {
+  Amiri,
+  Lateef,
+  Noto_Naskh_Arabic,
+  Plus_Jakarta_Sans,
+  Scheherazade_New,
+} from "next/font/google";
 import "./globals.css";
-import Sidebar from "../components/Sidebar";
+import AppFrame from "../components/AppFrame";
 import { SettingsProvider } from "../context/SettingsContext";
+import { getSurahList } from "../utils/api";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -20,24 +27,33 @@ const scheherazade = Scheherazade_New({
   variable: "--font-scheherazade",
 });
 
-export default function RootLayout({
+const notoNaskh = Noto_Naskh_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-noto-naskh",
+});
+
+const lateef = Lateef({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-lateef",
+});
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const surahs = await getSurahList();
+
   return (
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${plusJakarta.variable} ${amiri.variable} ${scheherazade.variable}`}
+        className={`${plusJakarta.variable} ${amiri.variable} ${scheherazade.variable} ${notoNaskh.variable} ${lateef.variable}`}
       >
         <SettingsProvider>
-          <div className="min-h-screen lg:pl-[18.5rem]">
-            <Sidebar />
-            <main className="min-h-screen px-4 pb-10 pt-20 sm:px-6 lg:px-10 lg:pt-10">
-              {children}
-            </main>
-          </div>
+          <AppFrame surahs={surahs}>{children}</AppFrame>
         </SettingsProvider>
       </body>
     </html>

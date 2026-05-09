@@ -59,31 +59,81 @@ export async function fetchSurahById(id) {
   };
 }
 
-export async function fetchSearchResults(query) {
+function normalizeMatch(match, index) {
+  return {
+    id:
+      match.number ??
+      `${match.surah?.number ?? match.surah}-${match.numberInSurah ?? index + 1}`,
+    surahNumber: Number(match.surah?.number ?? match.surah ?? 0),
+    surahName: match.surah?.englishName ?? "",
+    surahArabicName: match.surah?.name ?? "",
+    ayahNumber: Number(match.numberInSurah ?? match.ayah ?? index + 1),
+    ayahArabic: match.text ?? "",
+    translation: "",
+  };
+}
+
+export async function fetchSearchResults(query, lang = "en") {
   const trimmedQuery = query.trim();
 
   if (!trimmedQuery) {
     return [];
   }
 
-  const payload = await readJson(
-    `${UPSTREAM_API}/search/${encodeURIComponent(trimmedQuery)}/all/en.asad`,
-  );
+  const target = encodeURIComponent(trimmedQuery);
 
-  const matches = Array.isArray(payload?.data?.matches)
-    ? payload.data.matches
-    : Array.isArray(payload?.data)
-      ? payload.data
+  if (lang === "ar") {
+    const payload = await readJson(`${UPSTREAM_API}/search/${target}/all/quran-uthmani`);
+    const matches = Array.isArray(payload?.data?.matches)
+      ? payload.data.matches
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+    return matches.map((match, index) => normalizeMatch(match, index));
+  }
+
+  const englishPayload = await readJson(`${UPSTREAM_API}/search/${target}/all/en.asad`);
+  const englishMatches = Array.isArray(englishPayload?.data?.matches)
+    ? englishPayload.data.matches
+    : Array.isArray(englishPayload?.data)
+      ? englishPayload.data
       : [];
 
-  return matches.map((match, index) => ({
-    id:
-      match.number ??
-      `${match.surah?.number ?? match.surah}-${match.numberInSurah ?? index + 1}`,
-    surahNumber: match.surah?.number ?? match.surah,
-    surahName: match.surah?.englishName ?? "",
-    surahArabicName: match.surah?.name ?? "",
-    ayahNumber: match.numberInSurah ?? match.ayah,
-    translation: match.text ?? "",
-  }));
+  if (lang === "en") {
+    return englishMatches.map((match, index) => ({
+      ...normalizeMatch(match, index),
+      translation: match.text ?? "",
+    }));
+  }
+
+  const arabicPayload = await readJson(`${UPSTREAM_API}/search/${target}/all/quran-uthmani`);
+  const arabicMatches = Array.isArray(arabicPayload?.data?.matches)
+    ? arabicPayload.data.matches
+    : Array.isArray(arabicPayload?.data)
+      ? arabicPayload.data
+      : [];
+
+  const byKey = new Map();
+
+  for (let index = 0; index < englishMatches.length; index += 1) {
+    const match = englishMatches[index];
+    const item = normalizeMatch(match, index);
+    item.translation = match.text ?? "";
+    const key = `${item.surahNumber}-${item.ayahNumber}`;
+    byKey.set(key, item);
+  }
+
+  for (let index = 0; index < arabicMatches.length; index += 1) {
+    const match = arabicMatches[index];
+    const item = normalizeMatch(match, index);
+    const key = `${item.surahNumber}-${item.ayahNumber}`;
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.ayahArabic = item.ayahArabic;
+    } else {
+      byKey.set(key, item);
+    }
+  }
+
+  return [...byKey.values()];
 }
